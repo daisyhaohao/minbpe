@@ -10,7 +10,7 @@ Unlike BasicTokenizer:
 """
 
 import regex as re
-from .base import Tokenizer, get_stats, merge
+from minbpe.base import Tokenizer, get_stats, merge
 
 
 # the main GPT text split patterns, see
@@ -39,6 +39,8 @@ class RegexTokenizer(Tokenizer):
 
         # split the text up into text chunks
         text_chunks = re.findall(self.compiled_pattern, text)
+        print(type(text_chunks), text_chunks)
+        exit(0)
 
         # input text preprocessing
         ids = [list(ch.encode("utf-8")) for ch in text_chunks]
@@ -162,3 +164,23 @@ class RegexTokenizer(Tokenizer):
                 # this is an ordinary sequence, encode it normally
                 ids.extend(self.encode_ordinary(part))
         return ids
+
+
+if __name__=="__main__":
+    tokenizer = RegexTokenizer(GPT2_SPLIT_PATTERN) 
+    #text = "aaabdaaabac"
+    #text = "你好"
+    #text = "hello world! \n \t2024/02/25,     你好! I've eaten 5 apples, can't eat any more...    "
+    text = "\n \t"
+    tokenizer.train(text, 256 + 3, True) # 256 are the byte tokens, then do 3 merges
+
+    #print(tokenizer.merges)
+    #print(tokenizer.vocab)
+
+    #print(tokenizer.encode(text))
+    #print(tokenizer.decode(tokenizer.encode(text)))
+    ## [258, 100, 258, 97, 99]
+    #print(tokenizer.decode([258, 100, 258, 97, 99]))
+    ## aaabdaaabac
+    #tokenizer.save("toy")
+    ## writes two files: toy.model (for loading) and toy.vocab (for viewing)

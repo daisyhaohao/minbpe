@@ -9,7 +9,7 @@ But:
 - Does not handle any special tokens.
 """
 
-from .base import Tokenizer, get_stats, merge
+from minbpe.base import Tokenizer, get_stats, merge
 
 
 class BasicTokenizer(Tokenizer):
@@ -22,21 +22,28 @@ class BasicTokenizer(Tokenizer):
         num_merges = vocab_size - 256
 
         # input text preprocessing
+        # example
+        #   text = "aaa"
+        #   text_bytes = b'aaa'
+        #   ids = [97, 97, 97]
         text_bytes = text.encode("utf-8") # raw bytes
         ids = list(text_bytes) # list of integers in range 0..255
 
         # iteratively merge the most common pairs to create new tokens
-        merges = {} # (int, int) -> int
+        merges = {} # (it, int) -> int
         vocab = {idx: bytes([idx]) for idx in range(256)} # int -> bytes
         for i in range(num_merges):
             # count up the number of times every consecutive pair appears
-            stats = get_stats(ids)
+            stats = get_stats(ids) # stats is a dict, {pair: cnt}, eg. {(1, 2): 4}
+            print(i, ids, stats)
             # find the pair with the highest count
             pair = max(stats, key=stats.get)
+            print(pair)
             # mint a new token: assign it the next available id
             idx = 256 + i
             # replace all occurrences of pair in ids with idx
             ids = merge(ids, pair, idx)
+            print(ids)
             # save the merge
             merges[pair] = idx
             vocab[idx] = vocab[pair[0]] + vocab[pair[1]]
@@ -72,3 +79,20 @@ class BasicTokenizer(Tokenizer):
             idx = self.merges[pair]
             ids = merge(ids, pair, idx)
         return ids
+
+
+if __name__=="__main__":
+    tokenizer = BasicTokenizer() 
+    #text = "aaabdaaabac"
+    text = "你好"
+    tokenizer.train(text, 256 + 3, True) # 256 are the byte tokens, then do 3 merges
+    print(tokenizer.merges)
+    print(tokenizer.vocab)
+
+    print(tokenizer.encode(text))
+    print(tokenizer.decode(tokenizer.encode(text)))
+    ## [258, 100, 258, 97, 99]
+    #print(tokenizer.decode([258, 100, 258, 97, 99]))
+    ## aaabdaaabac
+    #tokenizer.save("toy")
+    ## writes two files: toy.model (for loading) and toy.vocab (for viewing)
